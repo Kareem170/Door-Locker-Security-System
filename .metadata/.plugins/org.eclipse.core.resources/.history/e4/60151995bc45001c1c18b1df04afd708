@@ -1,0 +1,45 @@
+/*
+ * HMI_ECU.h
+ *
+ *  Created on: Nov 15, 2021
+ *      Author: LAPTOP
+ */
+
+#ifndef HMI_ECU_H_
+#define HMI_ECU_H_
+
+
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+#define Password_Length 5  			/* Password Length */
+#define HMI_BAUD_RATE 9600	 		/* UART Baud Rate */
+#define OPEN_DOOR_OPTION '+'		/* Open door option */
+#define CHANGE_PASSWORD_OPTION '-'	/* Change Password Option */
+
+/********************* These defintions to sync between the 2 ECU **********************/
+#define CONTROL_ECU_READY 0x10
+#define CONTROL_PASSWORD_MATCH 0x11
+#define CONTROL_PASSWORD_DISMATCH 0x00
+#define HMI_ECU_READY 0x20
+#define ERROR_MESSAGE 0xFF
+#define OPENING_DOOR 0X22
+#define CLOSING_DOOR 0X33
+#define DOOR_CLOSED 0X44
+#define CONTINUE_PROGRAM 0X55
+#define Enter_Key 13
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+void HMI_takePassword(uint8* password_ptr);
+void HMI_sendPasswordToControl(const uint8* password_ptr);
+void HMI_setPasswordFirstTime(uint8* a_first_password_ptr,uint8* a_second_password_ptr);
+void HMI_displayMainOptions(void);
+void HMI_setAndCheckStatus(uint8* a_first_password_ptr,uint8* a_second_password_ptr);
+void HMI_handleOptions(uint8* a_first_password_ptr,uint8* a_second_password_ptr);
+void HMI_handleTimer(void);
+void HMI_sendOption(uint8 option);
+uint8 HMI_takeOption(void);
+uint8 HMI_receiveStatus(void);
+
+#endif /* HMI_ECU_H_ */

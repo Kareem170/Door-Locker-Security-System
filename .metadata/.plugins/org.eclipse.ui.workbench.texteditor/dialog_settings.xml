@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="handleChangePasswordOption"/>
+		<list key="findhistory">
+			<item value="handelChangePasswordOption"/>
+			<item value="delayWithTimer"/>
+			<item value="existing"/>
+			<item value="handelOpenDoor"/>
+			<item value="getPasswordEEPROM"/>
+			<item value="setupFirstPassword"/>
+			<item value="getOption"/>
+			<item value="sendStatus"/>
+			<item value="savePasswordToEEPROM"/>
+			<item value="savePasswordInEEPROM"/>
+			<item value="checkTwoPasswords"/>
+			<item value="Password_Length"/>
+			<item value="count"/>
+			<item value="password_ptr"/>
+			<item value="receivePassword_FromHMI"/>
+		</list>
+		<list key="replacehistory">
+			<item value="handleChangePasswordOption"/>
+			<item value="EEPROM"/>
+			<item value="handelOpenDoorOption"/>
+			<item value="read_Password_in_EEPROM"/>
+			<item value="AdjustPassword_FirstTime"/>
+			<item value="getOption_From_HMIECU"/>
+			<item value="send_status_to_HMIECU"/>
+			<item value="Save_Password_in_EEPROM"/>
+			<item value="savePasswordToEEPROM"/>
+			<item value="match_passwords"/>
+			<item value="PASSWORD_LENGTH"/>
+			<item value="i"/>
+			<item value="password"/>
+			<item value="receivePassword"/>
+			<item value="receivePassword_FromHMI"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1210"/>
+		<item key="DIALOG_Y_ORIGIN" value="526"/>
+		<item key="DIALOG_WIDTH" value="336"/>
+		<item key="DIALOG_HEIGHT" value="454"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-15|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+</section>

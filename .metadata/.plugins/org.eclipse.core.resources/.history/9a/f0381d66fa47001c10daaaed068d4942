@@ -1,0 +1,383 @@
+/*
+ ================================================================================================
+ Name        : Control_ECU.c
+ Author      : Kareem Mohamed
+ Description : Control_ECU Application Code (Source File)
+ Date        : 5/11/2021
+ ================================================================================================
+ */
+
+
+/*********************************************************************************/
+#include "Control_ECU.h"
+#include "buzzer.h"
+#include "external_eeprom.h"
+#include "motor.h"
+#include "uart.h"
+#include "twi.h"
+#include "timer.h"
+#include <avr/io.h> /* to enable the global interrupt*/
+#include "util/delay.h"
+/*******************************************************************************
+ *                                global variables                                  *
+ *******************************************************************************/
+/* flag to know when the timer finish counting*/
+uint8 timer_tick=0;
+
+/* to know how many times the user entered wrong password*/
+uint8 WrongPasswordCounts = 0;
+
+
+/*******************************************************************************
+ *                              Functions Definitions                           *
+ *******************************************************************************/
+
+/*
+ * Description : this function is synchronised with the UART in human machine interface and
+ * it loops until it takes the entire password.
+ */
+void receivePasswordFromHMI(uint8* password_ptr){
+	/*counter for the loop*/
+	uint8 count;
+
+	/*waiting until the HMI_ECU to be ready to send the password*/
+	while(UART_recieveByte()!= HMI_ECU_READY);
+
+	/*telling the HMI_ECU that control ECU is ready to receive the password */
+	UART_sendByte(CONTROL_ECU_READY);
+
+	/*looping until the length of the password*/
+	for(count = 0;count<PASSWORD_LENGTH;count++){
+		password_ptr[count] = UART_recieveByte();
+	}
+}
+/*****************************************************************************************/
+
+/*
+ * Description : to create new password you have to enter it twice this function will check
+ * if this two password matching or not
+ */
+uint8 checkTwoPasswords(const uint8* a_first_password_ptr,const uint8* a_second_password_ptr){
+	/*
+	 * 1) i is the counter for the loop
+	 * 2) flag is used to know if they matching or not
+	 */
+	uint8 i,flag = 0;
+	/*compare each number in first password with each number in the other one*/
+	for(i = 0;i < PASSWORD_LENGTH;i++){
+		if(a_first_password_ptr[i] != a_second_password_ptr[i]){
+			/*flag raised means they not matching*/
+			flag = 1;
+		}
+	}
+	if(flag == 1){
+		/*return false as dismatching*/
+		return FALSE;
+	}else{
+		/*return true as matching*/
+		return TRUE;
+	}
+}
+
+/***********************************************************************************************/
+/*
+ * Description : set the entire password in EEPROM in specific locations ,and make constraints on
+ *  this function do not let it change in the password
+ */
+void savePasswordInEEPROM(const uint8* password_ptr){
+	uint8 counter;
+	for(counter = 0;counter < PASSWORD_LENGTH;counter++){
+		/*
+		 * 1) PASSWORD_LOCATION  is the base address
+		 * 2) counter will be used as an offset
+		 */
+		EEPROM_writeByte(PASSWORD_LOCATION  + counter,password_ptr[counter]);
+	}
+}
+
+/*************************************************************************************************/
+
+/*
+ * Description : this function receives two passwords for HMI_ECU and check them
+ * if they match ,it will save this password in the EEPROM.
+ */
+uint8 setupFirstPassword(uint8* a_first_password_ptr,uint8* a_second_password_ptr){
+	/*take the first password THROUGH the UART*/
+	receivePasswordFromHMI(a_first_password_ptr);
+	/*take the second password THROUGH the UART*/
+	receivePasswordFromHMI(a_second_password_ptr);
+	/*if the two passwords are identical ,then go save them in EEPROM*/
+	if(checkTwoPasswords(a_first_password_ptr,a_second_password_ptr)){
+		savePasswordInEEPROM(a_first_password_ptr);
+		return SUCCESS;
+	}else{
+		return ERROR;
+	}
+}
+
+/*******************************************************************************************/
+
+/*
+ * description : this function tells the timer to start counting with specific configuration
+ * and give it how many interrupts you want
+ */
+void delayWithTimer(Timer_ConfigType* s_config,uint8 interrupt_number)
+{
+	/*set the configuration passed*/
+	Timer_init(s_config);
+	/*wait until number of interrupts specified  */
+	while(timer_tick < interrupt_number);
+	/*stop the timer counting and to be able to set another configuration*/
+	Timer_DeInit(s_config->Timer_ID);
+	/*reset the number of ticks*/
+	timer_tick = 0;
+}
+
+/*****************************************************************************************/
+/*
+ * Description : it will send the status (matching or not matching).
+ */
+uint8 getOption(void){
+	while(UART_recieveByte()!= HMI_ECU_READY);
+	UART_sendByte(CONTROL_ECU_READY);
+	return UART_recieveByte();
+}
+
+/*****************************************************************************************/
+/*
+ * Description : this synchronised function sends the status of control ECU
+ */
+void sendStatus(uint8 state){
+	UART_sendByte(CONTROL_ECU_READY);
+	while(UART_recieveByte()!= HMI_ECU_READY);
+	UART_sendByte(state);
+}
+
+/*************************************************************************************************/
+/*
+ * Description : gets the password from EEPROM (looping across the bytes in the memory).
+ */
+void getPasswordEEPROM(uint8* password_ptr){
+	uint8 counter;
+
+	for(counter = 0;counter < PASSWORD_LENGTH;counter++){
+		/*
+		 * 1) PASSWORD_LOCATION  is the base address
+		 * 2) counter will be used as an offset
+		 */
+		EEPROM_readByte(PASSWORD_LOCATION  + counter,password_ptr+counter);
+	}
+}
+
+/**************************************************************************************/
+
+/*
+ * Description : this function handles change password option first it checks the existing password in
+ * EEPROM if matches ,it will receives two passwords ,then checks them and save this new password in
+ * EEPROM
+ */
+void handelChangePasswordOption(uint8* password_ptr,uint8* existing_password){
+	while(1){
+		/*receive the password from the HMI ECU */
+		receivePasswordFromHMI(password_ptr);
+		/*get the existing password in EEPROM*/
+		getPasswordEEPROM(existing_password);
+		/*check the two password*/
+		if(checkTwoPasswords(password_ptr,existing_password) == TRUE){
+			/*if they match change the password in EEPROM and send the status to inform the HMI ECU*/
+			sendStatus(PASSWORD_MATCH);
+			while(1){
+				/*save the password received from HMI CEU IN EEPROM*/
+				if(setupFirstPassword(password_ptr,existing_password)==SUCCESS){
+					sendStatus(PASSWORD_MATCH);
+					break;
+				}else{
+					sendStatus(PASSWORD_DISMATCH);
+				}
+			}
+			WrongPasswordCounts = 0;
+			break;
+		}else{
+			WrongPasswordCounts++;
+			if(WrongPasswordCounts < 3){
+				sendStatus(PASSWORD_DISMATCH);
+			}else{
+				/*reset the counter to be able to use it again*/
+				WrongPasswordCounts = 0;
+				/*tell HMI ECU to display error message*/
+				sendStatus(ERROR_MESSAGE);
+				/*START the alarm*/
+				Buzzer_on();
+				/*setup the TIMER1 configuration */
+				/*
+				 * 1) f_cpu = 8Mhz i used prescaler = 1024
+				 * 2) f_timer = 8 Khz => time of one count = 1/8000
+				 * 3) to count 60 seconds no.of interrupt = 60/((1/8000)*2^16) = 7.324 = 7
+				 * 4) i will work with timer 1 overflow mode
+				 */
+				Timer_ConfigType s_timer1_config = {Timer1,NormalMode,F_CPU_1024,0,0};
+				/*waiting 1 minute using timer 1*/
+				delayWithTimer(&s_timer1_config,7);
+				/*stop the alarm*/
+				Buzzer_off();
+				/*tell HMI ECU to display the main menu again*/
+				sendStatus(CONTINUE_PROGRAM);
+				break;
+		}
+	}
+}
+}
+/************************************************************************************************/
+
+/*
+ * description : this function is major to handle open the door request ,receives the password form hmi ECU
+ * ,then it compares this password with the one saved in EEPROM .
+ * i will open the door if they match and send the status for HMI ECU ,if the user entered the password three
+ * times wrong the control ECU will trigger alarm for 1 minute ,then  control ECU informs the HMI ECU
+ * to continue the program
+ */
+void handelOpenDoor(uint8* password_ptr,uint8* existing_password){
+	while(1){
+		/*setup the TIMER1 configuration */
+		/*
+		 * 1) f_cpu = 8Mhz i used prescaler = 1024
+		 * 2) f_timer = 8 Khz => time of one count = 1/8000
+		 * 3) to count 15 seconds no.of interrupt = 15/((1/8000)*65000) = 1.8 = 2
+		 * 4) the compare value = 65000
+		 */
+		Timer_ConfigType s_timer1_config = {Timer1,Compare_mode,F_CPU_1024,0,0,65000};
+		/*receive the password from the HMI ECU */
+		receivePasswordFromHMI(password_ptr);
+		/*get the existing password in EEPROM*/
+		getPasswordEEPROM(existing_password);
+		/*check the two password*/
+		if(checkTwoPasswords(password_ptr,existing_password) == TRUE){
+			/*if they match open the door and send the status to inform the HMI ECU*/
+			sendStatus(DOOR_IS_OPENING);
+			/*i will make it rotates for 15 seconds*/
+			DcMotor_Rotate(CW,100);
+			/*start counting 15 seconds*/
+			delayWithTimer(&s_timer1_config,2);
+			/*after 15 seconds the motor will stop for 3 seconds*/
+			DcMotor_Rotate(STOP,0);
+			/*setup the TIMER1 configuration */
+			/*
+			 * 1) f_cpu = 8Mhz i used prescaler = 1024
+			 * 2) f_timer = 8 Khz => time of one count = 1/8000
+			 * 3) to count 3 seconds no.of interrupt = 3/((1/8000)*24000) = 1
+			 * 4) the compare value = 24000
+			 */
+			Timer_ConfigType s_timer1_config_three_seconds = {Timer1,Compare_mode,F_CPU_1024,0,24000};
+			/*wait 3 sconds*/
+			delayWithTimer(&s_timer1_config_three_seconds,1);
+			/*to let HMI ECU knows that the door is closing*/
+			sendStatus(DOOR_IS_CLOSING);
+			/*i will make it rotates anti clock wise for 15 seconds to close the door*/
+			DcMotor_Rotate(A_CW,100);
+			delayWithTimer(&s_timer1_config,2);
+			DcMotor_Rotate(STOP,0);
+			/*to let HMI ECU knows to stop displaying */
+			sendStatus(DOOR_IS_CLOSED);
+			break;
+		}else{
+			WrongPasswordCounts++;
+			if(WrongPasswordCounts < 3){
+				sendStatus(PASSWORD_DISMATCH);
+			}else{
+				/*reset the counter to be able to use it again*/
+				WrongPasswordCounts = 0;
+				/*tell HMI ECU to display error message*/
+				sendStatus(ERROR_MESSAGE);
+				/*START the alarm*/
+				Buzzer_on();
+				/*setup the TIMER1 configuration */
+				/*
+				 * 1) f_cpu = 8Mhz i used prescaler = 1024
+				 * 2) f_timer = 8 Khz => time of one count = 1/8000
+				 * 3) to count 60 seconds no.of interrupt = 60/((1/8000)*2^16) = 7.324 = 7
+				 * 4) i will work with timer 1 overflow mode
+				 */
+				Timer_ConfigType s_timer1_config = {Timer1,NormalMode,F_CPU_1024,0,0};
+				/*waiting 1 minute using timer 1*/
+				delayWithTimer(&s_timer1_config,7);
+				/*stop the alarm*/
+				Buzzer_off();
+				/*tell HMI ECU to display the main menu again*/
+				sendStatus(CONTINUE_PROGRAM);
+				break;
+			}
+		}
+	}
+}
+
+/*
+ * description : this function will be called back when the timer go to its interrupt service routine
+ */
+void handelTimer(void){
+	timer_tick++;
+}
+/*******************************************************************************************/
+
+/*******************************************************************************
+ *                             Main Function                                   *
+ *******************************************************************************/
+int main(void){
+	/*to hold the first_password taken from the user*/
+	uint8 first_password_buff[PASSWORD_LENGTH];
+
+	/*to hold the second_password taken from the user*/
+	uint8 second_password_buff[PASSWORD_LENGTH];
+
+	/*to hold the selected option from HMI ECU*/
+	uint8 selected_option;
+	/*setup the UART configuration*/
+	UART_ConfigType s_uart_config = {Eight_bits,Disabled,one_bit,Double_Speed_mode,UART_BAUD_RATE};
+
+	/*setup the I2C configuration*/
+	TWI_ConfigType s_twi_config = {100000,CONTROL_ECU_ADDRESS};
+
+	/*setting the callback functions*/
+	Timer1_setCallBack(handelTimer);
+
+	/* 	calling the init functions for each driver */
+	/* initialize the UART driver*/
+	UART_init(&s_uart_config);
+	/* initialise the I2C driver*/
+	TWI_init(&s_twi_config);
+	/* initialise the motor external driver*/
+	DcMotor_Init();
+	/* initialise the buzzer external driver*/
+	Buzzer_init();
+	/*set the I-bit to be able to use the timer driver*/
+	SREG |= (1<<7);
+	/*
+	 * put this piece of code before the main function to just run once
+	 */
+	/*this loop keeps taking inputs until two matches*/
+	while(1){
+		/*check if the passwords sent by HMI_ECU are identical and send to it the status*/
+		if(setupFirstPassword(first_password_buff,second_password_buff) == SUCCESS){
+			sendStatus(PASSWORD_MATCH);
+			/*the two passwords are the same go to step two*/
+			break;
+		}else{
+			sendStatus(PASSWORD_DISMATCH);
+		}
+	}
+	/*super loop*/
+	while(1){
+			/*wait until receives the option from HMI ECU*/
+			selected_option = getOption();
+			/*before we handle the option reset the wrong password counter to turn on the alarm
+			 * after three consecutive wrong passwords
+			 */
+			WrongPasswordCounts = 0;
+			if(selected_option == OPEN_DOOR_OPTION){
+				handelOpenDoor(first_password_buff,second_password_buff);
+			}else if(selected_option == CHANGE_PASSWORD_OPTION)
+			{
+				handelChangePasswordOption(first_password_buff,second_password_buff);
+			}
+	}
+	return 0;
+}

@@ -1,0 +1,48 @@
+/*
+ ================================================================================================
+ Name        : Control_ECU.h
+ Author      : Kareem Mohamed
+ Description : Control_ECU Application Code (Header File)
+ Date        : 5/11/2021
+ ================================================================================================
+ */
+
+#ifndef CONTROL_ECU_H_
+#define CONTROL_ECU_H_
+
+#include "std_types.h"
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+#define CONTROL_ECU_ADDRESS 0x44
+#define PASSWORD_LENGTH 5
+#define PASSWORD_LOCATION  0x000
+#define UART_BAUD_RATE 9600
+
+/********************* These defintions to sync between the 2 ECU **********************/
+#define CONTROL_ECU_READY 0x10
+#define HMI_ECU_READY 0x20
+#define DOOR_IS_OPENING  0X22
+#define DOOR_IS_CLOSING  0X33
+#define DOOR_IS_CLOSED 0X44
+#define ERROR_MESSAGE 0xFF
+#define PASSWORD_MATCH 0x11
+#define PASSWORD_DISMATCH 0x00
+#define CONTINUE_PROGRAM 0X55
+#define OPEN_DOOR_OPTION '+'
+#define CHANGE_PASSWORD_OPTION '-'
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+void receivePassword(uint8* password_ptr);
+void Save_Password_in_EEPROM(const uint8* password_ptr);
+uint8 getOption_From_HMIECU(void);
+void send_status_to_HMIECU(uint8 state);
+void read_Password_in_EEPROM(uint8* password_ptr);
+void handelOpenDoor(uint8* password_ptr,uint8* existing_password);
+void handelTimer(void);
+void handelChangePasswordOption(uint8* password_ptr,uint8* existing_password);
+uint8 AdjustPassword_FirstTime(uint8* a_first_password_ptr,uint8* a_second_password_ptr);
+uint8 match_passwords(const uint8* a_first_password_ptr,const uint8* a_second_password_ptr);
+
+#endif /* CONTROL_ECU_H_ */

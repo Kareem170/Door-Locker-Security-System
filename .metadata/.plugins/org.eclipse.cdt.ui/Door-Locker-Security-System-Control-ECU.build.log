@@ -1,0 +1,36 @@
+16:55:34 **** Incremental Build of configuration Debug for project Door-Locker-Security-System-Control-ECU ****
+make all 
+Building file: ../Control_ECU.c
+Invoking: AVR Compiler
+avr-gcc -Wall -g2 -gstabs -O0 -fpack-struct -fshort-enums -ffunction-sections -fdata-sections -std=gnu99 -funsigned-char -funsigned-bitfields -mmcu=atmega16 -DF_CPU=8000000UL -MMD -MP -MF"Control_ECU.d" -MT"Control_ECU.o" -c -o "Control_ECU.o" "../Control_ECU.c"
+In file included from ../Control_ECU.c:20:
+c:/winavr-20100110/lib/gcc/../../avr/include/util/delay.h:90:3: warning: #warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+Finished building: ../Control_ECU.c
+ 
+Building target: Door-Locker-Security-System-Control-ECU.elf
+Invoking: AVR C Linker
+avr-gcc -Wl,-Map,Door-Locker-Security-System-Control-ECU.map -mmcu=atmega16 -o "Door-Locker-Security-System-Control-ECU.elf"  ./Control_ECU.o ./Timer.o ./buzzer.o ./external_eeprom.o ./gpio.o ./motor.o ./pwm.o ./twi.o ./uart.o   
+Finished building target: Door-Locker-Security-System-Control-ECU.elf
+ 
+Invoking: AVR Create Extended Listing
+avr-objdump -h -S Door-Locker-Security-System-Control-ECU.elf  >"Door-Locker-Security-System-Control-ECU.lss"
+Finished building: Door-Locker-Security-System-Control-ECU.lss
+ 
+Invoking: Print Size
+avr-size --format=avr --mcu=atmega16 Door-Locker-Security-System-Control-ECU.elf
+AVR Memory Usage
+----------------
+Device: atmega16
+
+Program:   10266 bytes (62.7% Full)
+(.text + .data + .bootloader)
+
+Data:        288 bytes (28.1% Full)
+(.data + .bss + .noinit)
+
+
+Finished building: sizedummy
+ 
+
+16:55:35 Build Finished. 0 errors, 1 warnings. (took 833ms)
+

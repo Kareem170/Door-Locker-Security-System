@@ -1,0 +1,44 @@
+/*
+ ================================================================================================
+ Name        : HMI.h
+ Author      : Kareem Mohamed
+ Description : HMI_ECU Application Code (Header File)
+ Date        : 5/11/2021
+ ================================================================================================
+ */
+
+#ifndef HMI_H_
+#define HMI_H_
+
+
+
+
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+
+#define Password_Length 5
+#define CONTROL_ECU_READY 0x01
+#define HMI_ECU_READY 0X10
+#define first_wrong_password 0x02
+#define second_state 0x11
+#define open_door_option '+'
+#define change_password '-'
+#define Enter_Key 13
+/*******************************************************************************
+ *                      Functions Prototypes                                   *
+ *******************************************************************************/
+
+/* Description : Adjust_Display_Password Function
+ * This Fn Adjusts The Password Taken From Keypad and display '*' on screen
+*/
+void Adjust_And_Display_Password(uint8* password);
+
+/* Description : Send_Password_To_ControlECU
+ * This fn sends the password to control_ECU Using UART Communication Protocol
+*/
+void Send_Password_To_ControlECU(const uint8* password);
+
+void Display_Password_First_Time();
+
+#endif /* HMI_H_ */

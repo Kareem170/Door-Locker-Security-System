@@ -1,0 +1,48 @@
+/*
+ ================================================================================================
+ Name        : Control_ECU.h
+ Author      : Kareem Mohamed
+ Description : Control_ECU Application Code (Header File)
+ Date        : 5/11/2021
+ ================================================================================================
+ */
+
+#ifndef CONTROL_ECU_H_
+#define CONTROL_ECU_H_
+
+#include "std_types.h"
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+#define CONTROL_ECU_ADDRESS 0x44
+#define PASSWORD_LENGTH 5
+#define PASSWORD_LOCATION  0x000
+#define UART_BAUD_RATE 9600
+
+/********************* These defintions to sync between the 2 ECU **********************/
+#define CONTROL_ECU_READY 0x10
+#define HMI_ECU_READY 0x20
+#define OPENING_DOOR 0X22
+#define CLOSING_DOOR 0X33
+#define ERROR_MESSAGE 0xFF
+#define DOOR_CLOSED 0X44
+#define CONTROL_PASSWORD_MATCH 0x11
+#define CONTROL_PASSWORD_DISMATCH 0x00
+#define CONTINUE_PROGRAM 0X55
+#define OPEN_DOOR_OPTION '+'
+#define CHANGE_PASSWORD_OPTION '-'
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+void CONTROL_receivePasswordFromHMI(uint8* password_ptr);
+void CONTROL_savePasswordInEEPROM(const uint8* password_ptr);
+uint8 CONTROL_getOption(void);
+void CONTROL_sendStatus(uint8 state);
+void CONTROL_getPasswordEEPROM(uint8* password_ptr);
+void CONTROL_handelOpenDoor(uint8* password_ptr,uint8* existing_password);
+void CONTROL_handelTimer(void);
+void CONTROL_handelChangePasswordOption(uint8* password_ptr,uint8* existing_password);
+uint8 CONTROL_setupFirstPassword(uint8* a_first_password_ptr,uint8* a_second_password_ptr);
+uint8 CONTROL_checkTwoPasswords(const uint8* a_first_password_ptr,const uint8* a_second_password_ptr);
+
+#endif /* CONTROL_ECU_H_ */
