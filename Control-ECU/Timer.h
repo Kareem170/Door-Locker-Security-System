@@ -4,7 +4,7 @@
  *
  * File Name: Timer.h
  *
- * Description: Header file for the Timer AVR driver
+ * Description: Header file for the AVR Timer driver
  *
  * Author: Kareem Mohamed
  *
